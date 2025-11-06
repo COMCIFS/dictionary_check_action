@@ -9,7 +9,7 @@ apt-get update
 # Install 'subversion' since it is needed to retrieve the cod-tools package
 apt-get -y install subversion
 
-# Install 'moreutils' since it contain the 'sponge' program 
+# Install 'moreutils' since it contain the 'sponge' program
 apt-get -y install moreutils
 
 # Install 'git' since it is needed to retrieve the imported dictionaries
@@ -25,12 +25,26 @@ svn co -r ${COD_TOOLS_REV} \
        svn://www.crystallography.net/cod-tools/trunk .
 svn up -r ${COD_TOOLS_REV} \
        --set-depth infinity \
-       dependencies makefiles scripts src
+       makefiles scripts src
 
 # Install 'cod-tools' dependencies
-apt-get -y install sudo
-./dependencies/Ubuntu-22.04/build.sh
-./dependencies/Ubuntu-22.04/run.sh
+#~ apt-get -y install sudo
+#~ ./dependencies/Ubuntu-22.04/build.sh
+#~ ./dependencies/Ubuntu-22.04/run.sh
+apt-get -y install \
+    bison \
+    gcc \
+    libclone-perl \
+    libdate-calc-perl \
+    libdatetime-format-rfc3339-perl \
+    libhtml-parser-perl \
+    libjson-perl \
+    liblist-moreutils-perl \
+    libparse-yapp-perl \
+    libperl-dev \
+    make \
+    swig \
+;
 
 # Patch the Makefile and run custom build commands
 # to avoid time-intensive tests
