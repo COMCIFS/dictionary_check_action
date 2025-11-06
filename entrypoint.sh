@@ -17,7 +17,7 @@ apt-get -y install git
 
 # Make a sparse check out a fixed 'cod-tools' revision
 COD_TOOLS_DIR=cod-tools
-COD_TOOLS_REV=10048
+COD_TOOLS_REV=10698
 mkdir ${COD_TOOLS_DIR}
 cd ${COD_TOOLS_DIR}
 svn co -r ${COD_TOOLS_REV} \
@@ -36,8 +36,14 @@ apt-get -y install sudo
 # to avoid time-intensive tests
 perl -pi -e 's/^(include \${DIFF_DEPEND})$/#$1/' \
     makefiles/Makefile-perl-multiscript-tests
-make "$(pwd)"/src/lib/perl5/COD/CIF/Parser/Bison.pm
-make "$(pwd)"/src/lib/perl5/COD/CIF/Parser/Yapp.pm
+COD_CIF_PARSER_DIR="$(pwd)"/src/lib/perl5/COD/CIF/Parser/
+make -C ${COD_CIF_PARSER_DIR}
+ln -s ${COD_CIF_PARSER_DIR}/Yapp/lib/COD/CIF/Parser/Yapp.pm \
+      ${COD_CIF_PARSER_DIR}/Yapp.pm
+ln -s ${COD_CIF_PARSER_DIR}/Bison/lib/COD/CIF/Parser/Bison.pm \
+      ${COD_CIF_PARSER_DIR}/Bison.pm
+ln -s ${COD_CIF_PARSER_DIR}/Bison/lib/auto/COD/CIF/Parser/Bison/Bison.so \
+      "$(pwd)"/src/lib/perl5/auto/COD/CIF/Parser/Bison/Bison.so
 make ./src/lib/perl5/COD/ToolsVersion.pm
 
 PERL5LIB=$(pwd)/src/lib/perl5${PERL5LIB:+:${PERL5LIB}}
