@@ -9,15 +9,12 @@ apt-get update
 # Install 'subversion' since it is needed to retrieve the cod-tools package
 apt-get -y install subversion
 
-# Install 'moreutils' since it contain the 'sponge' program 
+# Install 'moreutils' since it contain the 'sponge' program
 apt-get -y install moreutils
-
-# Install 'git' since it is needed to retrieve the imported dictionaries
-apt-get -y install git
 
 # Make a sparse check out a fixed 'cod-tools' revision
 COD_TOOLS_DIR=cod-tools
-COD_TOOLS_REV=10048
+COD_TOOLS_REV=10698
 mkdir ${COD_TOOLS_DIR}
 cd ${COD_TOOLS_DIR}
 svn co -r ${COD_TOOLS_REV} \
@@ -25,19 +22,39 @@ svn co -r ${COD_TOOLS_REV} \
        svn://www.crystallography.net/cod-tools/trunk .
 svn up -r ${COD_TOOLS_REV} \
        --set-depth infinity \
-       dependencies makefiles scripts src
+       makefiles scripts src
 
 # Install 'cod-tools' dependencies
-apt-get -y install sudo
-./dependencies/Ubuntu-22.04/build.sh
-./dependencies/Ubuntu-22.04/run.sh
+#~ apt-get -y install sudo
+#~ ./dependencies/Ubuntu-22.04/build.sh
+#~ ./dependencies/Ubuntu-22.04/run.sh
+apt-get -y install \
+    bison \
+    gcc \
+    libclone-perl \
+    libdate-calc-perl \
+    libdatetime-format-rfc3339-perl \
+    libhtml-parser-perl \
+    libjson-perl \
+    liblist-moreutils-perl \
+    libparse-yapp-perl \
+    libperl-dev \
+    make \
+    swig \
+;
 
 # Patch the Makefile and run custom build commands
 # to avoid time-intensive tests
 perl -pi -e 's/^(include \${DIFF_DEPEND})$/#$1/' \
     makefiles/Makefile-perl-multiscript-tests
-make "$(pwd)"/src/lib/perl5/COD/CIF/Parser/Bison.pm
-make "$(pwd)"/src/lib/perl5/COD/CIF/Parser/Yapp.pm
+COD_CIF_PARSER_DIR="$(pwd)"/src/lib/perl5/COD/CIF/Parser/
+make -C ${COD_CIF_PARSER_DIR}
+ln -s ${COD_CIF_PARSER_DIR}/Yapp/lib/COD/CIF/Parser/Yapp.pm \
+      ${COD_CIF_PARSER_DIR}/Yapp.pm
+ln -s ${COD_CIF_PARSER_DIR}/Bison/lib/COD/CIF/Parser/Bison.pm \
+      ${COD_CIF_PARSER_DIR}/Bison.pm
+ln -s ${COD_CIF_PARSER_DIR}/Bison/lib/auto/COD/CIF/Parser/Bison/Bison.so \
+      "$(pwd)"/src/lib/perl5/auto/COD/CIF/Parser/Bison/Bison.so
 make ./src/lib/perl5/COD/ToolsVersion.pm
 
 PERL5LIB=$(pwd)/src/lib/perl5${PERL5LIB:+:${PERL5LIB}}
@@ -86,6 +103,9 @@ test -f ./ddl.dic && DDLM_REFERENCE_DIC=./ddl.dic
 
 if [ ! -v DDLM_REFERENCE_DIC ]
 then
+    # Install 'git' since it is needed to retrieve the imported dictionaries
+    apt-get -y install git
+
     git clone https://github.com/COMCIFS/cif_core.git "${TMP_DIR}"/cif_core
     DDLM_REFERENCE_DIC="${TMP_DIR}"/cif_core/ddl.dic
     # Specify the location of imported files (e.g. "templ_attr.cif")
@@ -137,9 +157,7 @@ do
          `# See https://github.com/COMCIFS/cif_core/pull/561` \
          -e "save_(reflns|diffrn_reflns)[.]limit_index_m_[1-9]_(min|max): .+ not contain evaluation" \
          -e "save_(refln|diffrn_refln|diffrn_standard_refln|exptl_crystal_face|twin_refln)[.]index_m_[1-9]: .+ not contain evaluation" \
-         `# _type.dimension is provided in a dREL method` \
-         -e "save_.+(q_coeff|global_phase_list|m_list|max_list|min_list|matrix_w).+ '_type.dimension' should be specified" |
-    sponge "${OUT_FILE}"
+    | sponge "${OUT_FILE}"
     if [ -s "${OUT_FILE}" ]
     then
         echo "Dictionary check detected the following irregularities:";
