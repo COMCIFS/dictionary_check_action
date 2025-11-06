@@ -12,9 +12,6 @@ apt-get -y install subversion
 # Install 'moreutils' since it contain the 'sponge' program
 apt-get -y install moreutils
 
-# Install 'git' since it is needed to retrieve the imported dictionaries
-apt-get -y install git
-
 # Make a sparse check out a fixed 'cod-tools' revision
 COD_TOOLS_DIR=cod-tools
 COD_TOOLS_REV=10698
@@ -106,6 +103,9 @@ test -f ./ddl.dic && DDLM_REFERENCE_DIC=./ddl.dic
 
 if [ ! -v DDLM_REFERENCE_DIC ]
 then
+    # Install 'git' since it is needed to retrieve the imported dictionaries
+    apt-get -y install git
+
     git clone https://github.com/COMCIFS/cif_core.git "${TMP_DIR}"/cif_core
     DDLM_REFERENCE_DIC="${TMP_DIR}"/cif_core/ddl.dic
     # Specify the location of imported files (e.g. "templ_attr.cif")
