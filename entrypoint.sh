@@ -6,23 +6,39 @@ EXTERNAL_DIC_DIR=cif-dictionaries
 
 apt-get update
 
-# Install 'subversion' since it is needed to retrieve the cod-tools package
-apt-get -y install subversion
-
-# Install 'moreutils' since it contain the 'sponge' program
-apt-get -y install moreutils
-
-# Make a sparse check out a fixed 'cod-tools' revision
+# Make a sparse check out of a fixed 'cod-tools' revision
+USE_GIT_MIRROR=1
 COD_TOOLS_DIR=cod-tools
-COD_TOOLS_REV=10698
-mkdir ${COD_TOOLS_DIR}
-cd ${COD_TOOLS_DIR}
-svn co -r ${COD_TOOLS_REV} \
-       --depth immediates \
-       svn://www.crystallography.net/cod-tools/trunk .
-svn up -r ${COD_TOOLS_REV} \
-       --set-depth infinity \
-       makefiles scripts src
+
+COD_TOOLS_GIT_REPO=https://github.com/cod-developers/cod-tools
+COD_TOOLS_GIT_COMMIT=3d99d7a4fa5854788094aba694aade2fc450c994
+
+COD_TOOLS_SERVER=www.crystallography.net
+COD_TOOLS_SVN_REPO=svn://${COD_TOOLS_SERVER}/cod-tools/trunk
+COD_TOOLS_SVN_COMMIT=10698
+
+if [ $USE_GIT_MIRROR -eq 1 ];
+then
+    apt-get -y install git
+    git clone --filter=blob:none --no-checkout ${COD_TOOLS_GIT_REPO} ${COD_TOOLS_DIR}
+    cd ${COD_TOOLS_DIR}
+    git sparse-checkout init --cone
+    git sparse-checkout set makefiles scripts src
+    git config advice.detachedHead false
+    git checkout ${COD_TOOLS_GIT_COMMIT}
+    cd ..
+else
+    apt-get -y install subversion
+    mkdir ${COD_TOOLS_DIR}
+    cd ${COD_TOOLS_DIR}
+    svn co -r ${COD_TOOLS_SVN_COMMIT} \
+           --depth immediates \
+           ${COD_TOOLS_SVN_REPO} .
+    svn up -r ${COD_TOOLS_SVN_COMMIT} \
+           --set-depth infinity \
+           makefiles scripts src
+    cd ..
+fi
 
 # Install 'cod-tools' dependencies
 #~ apt-get -y install sudo
@@ -45,15 +61,16 @@ apt-get -y install \
 
 # Patch the Makefile and run custom build commands
 # to avoid time-intensive tests
+cd ${COD_TOOLS_DIR}
 perl -pi -e 's/^(include \${DIFF_DEPEND})$/#$1/' \
     makefiles/Makefile-perl-multiscript-tests
 COD_CIF_PARSER_DIR="$(pwd)"/src/lib/perl5/COD/CIF/Parser/
-make -C ${COD_CIF_PARSER_DIR}
-ln -s ${COD_CIF_PARSER_DIR}/Yapp/lib/COD/CIF/Parser/Yapp.pm \
-      ${COD_CIF_PARSER_DIR}/Yapp.pm
-ln -s ${COD_CIF_PARSER_DIR}/Bison/lib/COD/CIF/Parser/Bison.pm \
-      ${COD_CIF_PARSER_DIR}/Bison.pm
-ln -s ${COD_CIF_PARSER_DIR}/Bison/lib/auto/COD/CIF/Parser/Bison/Bison.so \
+make -C "${COD_CIF_PARSER_DIR}"
+ln -s "${COD_CIF_PARSER_DIR}"/Yapp/lib/COD/CIF/Parser/Yapp.pm \
+      "${COD_CIF_PARSER_DIR}"/Yapp.pm
+ln -s "${COD_CIF_PARSER_DIR}"/Bison/lib/COD/CIF/Parser/Bison.pm \
+      "${COD_CIF_PARSER_DIR}"/Bison.pm
+ln -s "${COD_CIF_PARSER_DIR}"/Bison/lib/auto/COD/CIF/Parser/Bison/Bison.so \
       "$(pwd)"/src/lib/perl5/auto/COD/CIF/Parser/Bison/Bison.so
 make ./src/lib/perl5/COD/ToolsVersion.pm
 
@@ -64,6 +81,9 @@ PATH=$(pwd)/scripts${PATH:+:${PATH}}
 export PATH
 
 cd ..
+
+# Install 'moreutils' since it contain the 'sponge' program
+apt-get -y install moreutils
 
 # Dictionary and template files in the tested repository
 # should appear first in the import search path.
